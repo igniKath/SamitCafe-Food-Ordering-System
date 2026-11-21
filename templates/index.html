@@ -1,0 +1,80 @@
+{% extends "base.html" %}
+
+{% block content %}
+{% set fallback_img = url_for('static', filename='images/placeholder.jpg') %}
+
+<!-- MENU -->
+<section class="card">
+  <h2>Our Menu</h2>
+  <div class="menu-grid">
+    {% for item in menu %}
+    <div class="menu-card{% if not item.available %} sold-out{% endif %}">
+      <img src="{{ url_for('static', filename='images/' + item.image) }}"
+           alt="{{ item.name }}"
+           onerror="this.onerror=null; this.src='{{ fallback_img }}'">
+
+      <h3>{{ item.name }}</h3>
+      <p class="price">₱{{ "%.2f"|format(item.price) }}</p>
+
+      {% if not item.available %}
+        <p class="sold-label">Sold out</p>
+      {% endif %}
+
+      <form action="{{ url_for('add') }}" method="POST" class="add-form">
+        <input type="hidden" name="item_id" value="{{ item.item_id }}">
+        <input type="text" name="quantity" value="1" class="qty-input"
+               aria-label="Quantity for {{ item.name }}">
+        <button type="submit" class="btn">Add</button>
+      </form>
+    </div>
+    {% endfor %}
+  </div>
+</section>
+
+<!-- CART -->
+<section class="card">
+  <h2>Your Order</h2>
+
+  {% if order.items %}
+  <div class="table-wrap">
+    <table>
+      <tr>
+        <th>Item</th>
+        <th>Price</th>
+        <th>Qty</th>
+        <th>Line Total</th>
+        <th></th>
+      </tr>
+      {% for item, qty, line_total in order.get_lines() %}
+      <tr>
+        <td>
+          <img src="{{ url_for('static', filename='images/' + item.image) }}"
+               alt="{{ item.name }}" class="cart-thumb"
+               onerror="this.onerror=null; this.src='{{ fallback_img }}'">
+          {{ item.name }}
+        </td>
+        <td>₱{{ "%.2f"|format(item.price) }}</td>
+        <td>{{ qty }}</td>
+        <td>₱{{ "%.2f"|format(line_total) }}</td>
+        <td>
+          <form action="{{ url_for('remove', item_id=item.item_id) }}" method="POST">
+            <button type="submit" class="btn-small">Remove</button>
+          </form>
+        </td>
+      </tr>
+      {% endfor %}
+    </table>
+  </div>
+
+  <p class="grand-total">Grand Total: ₱{{ "%.2f"|format(order.calculate_total()) }}</p>
+
+  <form action="{{ url_for('reset') }}" method="POST">
+    <button type="submit" class="btn btn-outline">Clear Order</button>
+  </form>
+
+  {% else %}
+    <p class="empty">Your order is empty. Pick something from the menu above.</p>
+  {% endif %}
+</section>
+
+{% endblock %}
